@@ -3,6 +3,7 @@ import { useWorkflowStore } from '../../store/workflowStore';
 import { Sparkles, Loader2, X } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import type { NodeType } from '../../types/nodes';
+import { getAutomations } from '../../api/mockApi';
 
 export default function AIGeneratorModal() {
   const { aiGeneratorOpen, setAiGeneratorOpen, setGraph } = useWorkflowStore();
@@ -13,69 +14,136 @@ export default function AIGeneratorModal() {
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
-    
     setIsGenerating(true);
     
-    // Simulate AI latency
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    try {
+      // 1. Simulate API Latency & Fetch Real Automations to prove API integration
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      const automations = await getAutomations();
     
-    // Simple mock parser: generates a basic linear workflow based on keywords
-    const newNodes = [];
-    const newEdges = [];
-    
-    let y = 100;
-    const addNode = (type: NodeType, title: string) => {
+    // 2. Set up new canvas state
+    const newNodes: any[] = [];
+    const newEdges: any[] = [];
+    let currentX = 50;
+    const currentY = window.innerHeight / 2 - 100;
+
+    const addNode = (type: NodeType, title: string, x: number, y: number, extraData: any = {}) => {
       const id = uuidv4();
       newNodes.push({
-        id,
-        type,
-        position: { x: window.innerWidth / 2 - 100, y },
-        data: { type, title, metadata: [], customFields: [], params: {} } // Mock base
+        id, type, position: { x, y },
+        data: { type, title, metadata: [], customFields: [], params: {}, isSimulating: false, simStatus: undefined, ...extraData }
       });
-      if (newNodes.length > 1) {
-        newEdges.push({
-          id: uuidv4(),
-          source: newNodes[newNodes.length - 2].id,
-          target: id,
-          type: 'custom',
-          animated: false
-        });
-      }
-      y += 150;
       return id;
     };
 
-    addNode('start', `${prompt.split(' ')[0]} Request Initialized`);
-    
-    if (prompt.toLowerCase().includes('document') || prompt.toLowerCase().includes('form')) {
-      addNode('task', 'Collect Documents');
-    }
-    
-    if (prompt.toLowerCase().includes('approval') || prompt.toLowerCase().includes('manager')) {
-      addNode('approval', 'Manager Approval');
-    }
-    
-    if (prompt.toLowerCase().includes('email') || prompt.toLowerCase().includes('notify')) {
-      addNode('automated', 'Send Notification');
-      // Mock setting an automated prop
-      newNodes[newNodes.length - 1].data = {
-          type: 'automated',
-          title: 'Send Notification',
-          actionId: 'send_email',
-          parameters: { to: 'employee@company.com', subject: 'Workflow Update' }
-      };
-    }
-    
-    if (newNodes.length === 1) {
-       addNode('task', 'Review Request'); // Fallback if no keywords matched
-    }
-    
-    addNode('end', 'Process Completed');
+    const addEdge = (source: string, target: string, condition?: any) => {
+      newEdges.push({
+        id: uuidv4(), source, target, type: 'custom', animated: false,
+        data: { condition }
+      });
+    };
 
-    setGraph(newNodes as any, newEdges as any);
-    setIsGenerating(false);
-    setAiGeneratorOpen(false);
-    setPrompt('');
+    const lowerPrompt = prompt.toLowerCase();
+    const isComplex = lowerPrompt.includes('complex') || lowerPrompt.includes('branch') || lowerPrompt.includes('test every feature') || lowerPrompt.includes('mock api') || prompt.length > 80;
+
+    if (isComplex) {
+      // --- SHOWCASE GRAPH: BRANCHING & MOCK APIS ---
+      
+      const startId = addNode('start', 'Onboarding Trigger', currentX, currentY);
+      currentX += 300;
+
+      const taskId = addNode('task', 'Verify HR Documents', currentX, currentY, { assignee: 'HR Lead', dueDate: new Date().toISOString().split('T')[0] });
+      addEdge(startId, taskId);
+      currentX += 300;
+
+      const approvalId = addNode('approval', 'Finance Budget Review', currentX, currentY, { approverRole: 'Finance Director', autoApproveThreshold: 2 });
+      addEdge(taskId, approvalId);
+      currentX += 350;
+
+      // Dynamic Mock API Matching
+      const getAction = (matchId: string) => automations.find(a => a.id === matchId) || automations[0];
+      
+      // BRANCH A: Approved Configured via Mock API
+      const slackAction = getAction('send_slack');
+      const slackParams: any = {};
+      slackAction?.params.forEach(p => slackParams[p] = p === 'channel' ? '#onboarding' : 'Welcome to the team!');
+      
+      const approvedPathId = addNode('automated', 'Provision Access', currentX, currentY - 150, { 
+        actionId: slackAction?.id, parameters: slackParams 
+      });
+      addEdge(approvalId, approvedPathId, { field: 'Status', operator: '==', value: 'Approved' });
+
+      // BRANCH B: Rejected Configured via Mock API
+      const emailAction = getAction('send_email');
+      const emailParams: any = {};
+      emailAction?.params.forEach(p => emailParams[p] = p === 'to' ? 'hr@company.com' : 'Budget Denied Alert');
+
+      const rejectedPathId = addNode('automated', 'Alert HR', currentX, currentY + 150, { 
+        actionId: emailAction?.id, parameters: emailParams 
+      });
+      addEdge(approvalId, rejectedPathId, { field: 'Status', operator: '==', value: 'Rejected' });
+
+      // CONVERGE
+      currentX += 350;
+      const endId = addNode('end', 'Process Finalized', currentX, currentY, { completionMessage: 'Workflow completed successfully.', summaryFlag: true });
+      addEdge(approvedPathId, endId);
+      addEdge(rejectedPathId, endId);
+
+    } else {
+      // --- DYNAMIC LINEAR PARSING WITH MOCK APIS ---
+      
+      let lastId = addNode('start', `${prompt.split(' ')[0]} Process`, currentX, currentY, { triggerType: 'API' });
+      currentX += 300;
+
+      // Extract tasks
+      if (lowerPrompt.includes('document') || lowerPrompt.includes('task')) {
+        const newId = addNode('task', 'Complete Forms', currentX, currentY, { assignee: 'System User' });
+        addEdge(lastId, newId);
+        lastId = newId; currentX += 300;
+      }
+      
+      // Extract approvals
+      if (lowerPrompt.includes('approval') || lowerPrompt.includes('manager')) {
+        const newId = addNode('approval', 'Manager Review', currentX, currentY, { approverRole: 'Manager', autoApproveThreshold: 3 });
+        addEdge(lastId, newId);
+        lastId = newId; currentX += 300;
+      }
+      
+      // Extract automations
+      if (lowerPrompt.includes('email') || lowerPrompt.includes('update') || lowerPrompt.includes('system') || lowerPrompt.includes('slack')) {
+        // Find best match in Mock API
+        let bestMatch = automations[0];
+        for (const auto of automations) {
+          if (lowerPrompt.includes(auto.id.split('_')[1]) || lowerPrompt.includes(auto.id.split('_')[0])) bestMatch = auto;
+        }
+        
+        const generatedParams: any = {};
+        bestMatch.params.forEach(p => generatedParams[p] = `{${p}_value}`);
+
+        const newId = addNode('automated', 'Execute Action', currentX, currentY, { actionId: bestMatch.id, parameters: generatedParams });
+        addEdge(lastId, newId);
+        lastId = newId; currentX += 300;
+      }
+
+      // Ensure min length
+      if (newNodes.length === 1) {
+        const newId = addNode('task', 'Initial Review', currentX, currentY, { assignee: 'HR' });
+        addEdge(lastId, newId);
+        lastId = newId; currentX += 300;
+      }
+
+      const endId = addNode('end', 'Process Completed', currentX, currentY, { endMessage: 'Done' });
+      addEdge(lastId, endId);
+    }
+
+      setGraph(newNodes as any, newEdges as any);
+      setAiGeneratorOpen(false);
+      setPrompt('');
+    } catch (error) {
+      console.error('Failed to generate workflow:', error);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (

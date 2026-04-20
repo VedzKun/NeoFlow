@@ -1,6 +1,6 @@
 import { useWorkflowStore } from '../../store/workflowStore';
 import { useSimulationEngine } from '../../hooks/useSimulationEngine';
-import { PlayCircle, Square, X, CheckCircle, AlertTriangle, XCircle, Slash } from 'lucide-react';
+import { PlayCircle, Square, X, CheckCircle, AlertTriangle, XCircle, Slash, FlaskConical } from 'lucide-react';
 
 export default function SandboxPanel() {
   const sandboxOpen = useWorkflowStore((s) => s.sandboxOpen);
@@ -30,7 +30,7 @@ export default function SandboxPanel() {
     <div className="absolute bottom-0 left-0 right-0 h-64 bg-card border-t border-border shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.5)] z-30 flex flex-col animate-in slide-in-from-bottom-6 duration-300">
       <div className="flex items-center justify-between p-3 border-b border-border bg-muted/10 shrink-0">
         <div className="flex items-center gap-3">
-          <span className="text-[16px] leading-none">🧪</span>
+          <FlaskConical size={18} className="text-primary" />
           <h3 className="text-sm font-semibold m-0">Workflow Sandbox</h3>
           {isSimulating && <span className="text-[10px] uppercase tracking-wider font-bold text-blue-500 bg-blue-500/10 px-2 flex items-center justify-center rounded border border-blue-500/20 animate-pulse">Running</span>}
           {!isSimulating && simulationResult && (
