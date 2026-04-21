@@ -38,7 +38,6 @@ function Flow() {
     onEdgesChange,
     onConnect,
     setSelectedNode,
-    setSandboxOpen,
   } = useWorkflowStore();
 
   const { onDragOver, onDrop } = useDragAndDrop();

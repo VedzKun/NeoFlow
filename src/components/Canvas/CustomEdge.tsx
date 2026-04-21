@@ -1,6 +1,5 @@
-import { getBezierPath, EdgeLabelRenderer, BaseEdge } from 'reactflow';
+import { getBezierPath, EdgeLabelRenderer } from 'reactflow';
 import type { EdgeProps } from 'reactflow';
-import { cn } from '../../lib/utils';
 import type { EdgeCondition } from '../../types/workflow';
 
 export default function CustomEdge({
@@ -48,7 +47,21 @@ export default function CustomEdge({
 
   return (
     <>
-      <BaseEdge path={edgePath} markerEnd={markerEnd} style={edgeStyle} className={pathClass as any} />
+      <path
+        id={id}
+        className={`react-flow__edge-path ${pathClass}`}
+        d={edgePath}
+        markerEnd={markerEnd}
+        style={edgeStyle}
+        fill="none"
+      />
+      <path
+        className="react-flow__edge-interaction"
+        d={edgePath}
+        fill="none"
+        strokeOpacity={0}
+        strokeWidth={20}
+      />
       {condition && (
         <EdgeLabelRenderer>
           <div

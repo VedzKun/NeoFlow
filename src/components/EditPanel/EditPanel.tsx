@@ -34,7 +34,6 @@ export default function EditPanel() {
     const edge = edges.find(e => e.id === edgeId);
     if (!edge) return;
     onEdgesChange([{
-      id: edgeId,
       type: 'reset' as const,
       item: { ...edge, data: { ...edge.data, condition: condition || undefined } }
     }]);

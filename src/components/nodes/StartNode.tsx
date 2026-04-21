@@ -16,7 +16,7 @@ export default function StartNode({ data, selected }: NodeProps<StartNodeData>) 
         </div>
       </div>
       
-      {(data.triggerType !== 'manual' || data.customFields?.length > 0) && (
+      {(data.triggerType !== 'manual' || (data.customFields?.length || 0) > 0) && (
         <div className="p-3 bg-muted/30 rounded-b-md flex flex-col gap-2">
             {data.triggerType !== 'manual' && (
                 <div className="text-[10px] text-muted-foreground flex justify-between">

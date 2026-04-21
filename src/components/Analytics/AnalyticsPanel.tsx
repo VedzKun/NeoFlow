@@ -35,14 +35,14 @@ export default function AnalyticsPanel() {
       if (count > maxIncoming) {
           maxIncoming = count;
           const targetNode = nodes.find(n => n.id === nodeId);
-          if (targetNode) bottleneck = (targetNode.data as WorkflowNodeData).title;
+          if (targetNode) bottleneck = (targetNode.data as WorkflowNodeData).title || 'Untitled Node';
       }
   });
   
   // If no convergence, pick the first approval as a natural bottleneck
   if (bottleneck === 'None Detected') {
       const firstApproval = nodes.find(n => n.data.type === 'approval');
-      if (firstApproval) bottleneck = (firstApproval.data as WorkflowNodeData).title;
+      if (firstApproval) bottleneck = (firstApproval.data as WorkflowNodeData).title || 'Approval Node';
   }
   
   return (

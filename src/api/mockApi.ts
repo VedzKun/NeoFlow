@@ -140,7 +140,7 @@ function delay(ms: number): Promise<void> {
 }
 
 function getNodeTitle(data: WorkflowNodeData): string {
-  if ('title' in data) return data.title;
+  if ('title' in data && data.title) return data.title;
   if (data.type === 'end') return data.endMessage || 'End';
   return 'Untitled';
 }
